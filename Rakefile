@@ -5,7 +5,7 @@ require './lib/zhanhui'
 
 namespace :operation do
 
-  config = YAML::load( File.open('localhost.yaml') )
+  config = YAML::load( File.open('db_config.yaml') )
   ActiveRecord::Base.establish_connection( config )
 
   class Exhibition < ActiveRecord::Base 
@@ -13,6 +13,8 @@ namespace :operation do
   class CityCode < ActiveRecord::Base
   end
   class BaseGeneralExpoCenter < ActiveRecord::Base
+  end
+  class BaseGeneralExpo < ActiveRecord::Base
   end
 
   desc "Crawl Expo Info"
@@ -37,7 +39,7 @@ namespace :operation do
                 processed_work << work
                 p "update details of:" + work[:name].force_encoding('utf-8')
                 info = Zhanhui.get_expo_info(work) 
-                Exhibition.new( info ).save
+                BaseGeneralExpo.new( info ).save
               end
             rescue => e
               puts "error loading page:" + work[:page]
