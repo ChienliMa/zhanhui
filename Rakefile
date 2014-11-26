@@ -5,7 +5,7 @@ require './lib/zhanhui'
 
 namespace :operation do
 
-  config = YAML::load( File.open('remote.yaml') )
+  config = YAML::load( File.open('localhost.yaml') )
   ActiveRecord::Base.establish_connection( config )
 
   class Exhibition < ActiveRecord::Base 
@@ -19,7 +19,7 @@ namespace :operation do
   task :crawl_expo_info do
     # get expo list
     exhibitions = Zhanhui.get_expos()
-
+    processed_work = []
     # fetch each info of each expo
     thread_num = 5
     works = exhibitions
@@ -33,9 +33,12 @@ namespace :operation do
             # sleep for 1 second
             sleep( 1.second )
             begin
-              p "update details of:" + work[:name].force_encoding('utf-8')
-              info = Zhanhui.get_expo_info(work) 
-              Exhibition.new( info ).save
+              if !processed_work.include?(work)
+                processed_work << work
+                p "update details of:" + work[:name].force_encoding('utf-8')
+                info = Zhanhui.get_expo_info(work) 
+                Exhibition.new( info ).save
+              end
             rescue => e
               puts "error loading page:" + work[:page]
             end
@@ -55,9 +58,10 @@ namespace :operation do
     center_ids = Zhanhui.get_expo_center_ids()
     
     # fetch info of each expo center
-    thread_num = 8
-    works = ids
-
+    thread_num = 5
+    works = center_ids
+    # Avoid duplicated work
+    processed_work = []
     workers = (0..thread_num).map do 
       # start a new thread
       Thread.new do
@@ -67,11 +71,16 @@ namespace :operation do
             # sleep for 1 second
             sleep( 1.second )
             begin
-              p "update details of:" + work[:name].force_encoding('utf-8')
-              info = Zhanhui.get_expo_center_info(work) 
-              BaseGeneralExpoCenter.new( info ).save
+              # Avoid duplicated work
+              if !processed_work.include?(work) #&& !BaseGeneralExpoCenter.find_by_id(work.to_i)
+                processed_work << work 
+                p "update details of center. ID : " + work
+                info = Zhanhui.get_expo_center_info(work) 
+                BaseGeneralExpoCenter.new( info ).save
+              end
             rescue => e
-              puts "error loading page:" + work[:page]
+              puts "Errors encoutered when loading Expo Center : #{work}"
+              puts e
             end
           end
         rescue ThreadError
