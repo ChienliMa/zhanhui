@@ -91,4 +91,13 @@ namespace :operation do
     workers.map(&:join); 
   end
 
+  desc "update city code"
+  task :update_center_city_codes => :crawl_expo_center_info do
+    BaseGeneralExpoCenter.where(city_code:'') do |record|
+      city = record[:city]
+      record[:city_code] = CityCode.find_by_city(city)[:code]
+      record.save
+    end
+  end
+
 end

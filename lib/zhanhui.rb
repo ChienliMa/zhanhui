@@ -17,6 +17,8 @@ class Zhanhui
     Mimic broswer behavior to sent HTTP request
     to avoid blocking
     """
+    # force encoding
+    url = URI::encode(url)
     # parse URL get URI
     uri = url.match(/com.*?\z/).to_s[3..-1]
     http_request = "GET #{uri} HTTP/1.1\r\n"+
@@ -159,8 +161,11 @@ class Zhanhui
       end
     end
 
+    # check if has nearby info
+    url = "http://www.haozhanhui.com/place/place_common_#{id}.html"
+    page = Nokogiri::HTML( request( url ) )
     return center if page.search("div[@id='main']").search("div[@class='box-bd placecommon']").empty?
-
+    
     # get nearby information
     # get bus information
     center[:bus] = get_expo_center_extra_info( '公交车站', id )
